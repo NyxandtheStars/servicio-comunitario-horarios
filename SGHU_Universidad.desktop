@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Horarios UNESR (SGHU)
+Comment=Sistema de Planificación y Gestión de Horarios Universitarios
+Exec=bash -c 'DIR="$(dirname "$(realpath "%k")")"; cd "$DIR" && ./iniciar_sistema.sh'
+Icon=calendar
+Terminal=false
+Categories=Office;Education;
+StartupNotify=true
+
