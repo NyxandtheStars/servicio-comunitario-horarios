@@ -1,4 +1,4 @@
-from database import get_connection, DIAS_ORDEN, BLOQUES_HORARIOS
+from database import get_connection, DIAS_ORDEN
 
 
 def hay_solapamiento(h_ini1, h_fin1, h_ini2, h_fin2):
@@ -110,29 +110,58 @@ def generar_horarios_automaticos():
             dia_f = carga["dia_fijo"]
             hi_f = carga["hora_inicio_fija"]
             hf_f = carga["hora_fin_fija"]
-            sid_elegido = salon_pref_id if salon_pref_id else salones[0]["id"]
-
-            cursor.execute(
-                """
-                INSERT INTO asignaciones_horario
-                (carga_id, profesor_id, materia_id, salon_id, dia, hora_inicio, hora_fin, estado)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'Confirmado')
-                """,
-                (cid, pid, mid, sid_elegido, dia_f, hi_f, hf_f)
+            prof_choque = any(
+                d == dia_f and hay_solapamiento(hi_f, hf_f, oi, of)
+                for d, oi, of, _ in ocupado_profesor.get(pid, [])
             )
-            ocupado_profesor.setdefault(pid, []).append((dia_f, hi_f, hf_f, sid_elegido))
-            ocupado_salon.setdefault(sid_elegido, []).append((dia_f, hi_f, hf_f, pid))
-            asignados += 1
+            salon_elegido = None
+            if not prof_choque:
+                salones_candidatos = list(salones)
+                if salon_pref_id:
+                    salones_candidatos.sort(key=lambda s: 0 if s["id"] == salon_pref_id else 1)
+
+                for salon in salones_candidatos:
+                    sid = salon["id"]
+                    salon_choque = any(
+                        d == dia_f and hay_solapamiento(hi_f, hf_f, oi, of)
+                        for d, oi, of, _ in ocupado_salon.get(sid, [])
+                    )
+                    if es_ambiente_compartible(salon["codigo"]) or not salon_choque:
+                        salon_elegido = sid
+                        break
+
+            if salon_elegido is not None:
+                cursor.execute(
+                    """
+                    INSERT INTO asignaciones_horario
+                    (carga_id, profesor_id, materia_id, salon_id, dia, hora_inicio, hora_fin, estado)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'Confirmado')
+                    """,
+                    (cid, pid, mid, salon_elegido, dia_f, hi_f, hf_f)
+                )
+                ocupado_profesor.setdefault(pid, []).append((dia_f, hi_f, hf_f, salon_elegido))
+                ocupado_salon.setdefault(salon_elegido, []).append((dia_f, hi_f, hf_f, pid))
+                asignados += 1
+            else:
+                pendientes += 1
+                causa = "docente" if prof_choque else "ambiente"
+                mensajes.append(
+                    f"Conflicto de {causa}: '{carga['materia_nombre']}' "
+                    f"({carga['carrera_nombre']}) con el Prof. {carga['profesor_nombre']} "
+                    f"no pudo asignarse en {dia_f} de {hi_f} a {hf_f}."
+                )
             continue
 
         # Caso 2: Asignación automática buscando entre la disponibilidad del profesor
         disponibles_prof = disp_por_profesor.get(pid, [])
         if not disponibles_prof:
-            disponibles_prof = [
-                (d, b[0], b[1])
-                for d in DIAS_ORDEN[:5]
-                for b in BLOQUES_HORARIOS[:4]
-            ]
+            pendientes += bloques_req
+            mensajes.append(
+                f"Sin disponibilidad registrada: '{carga['materia_nombre']}' "
+                f"({carga['carrera_nombre']}) con el Prof. {carga['profesor_nombre']} "
+                f"no tiene bloques horarios para asignar."
+            )
+            continue
 
         bloques_logrados = 0
         dias_usados_en_materia = set()

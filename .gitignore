@@ -16,3 +16,6 @@ reportes_generados/
 ~$*
 .DS_Store
 Thumbs.db
+
+# Bandera de inicio en blanco
+.iniciar_en_blanco

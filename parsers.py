@@ -1,3 +1,4 @@
+import os
 import re
 import unicodedata
 import openpyxl
@@ -61,10 +62,12 @@ def normalizar_hora(h_str, ampm=""):
     m = int(numeros[1][:2]) if len(numeros) >= 2 else 0
 
     ampm_clean = normalizar_texto(ampm)
-    if "pm" in ampm_clean and "am" not in ampm_clean:
+    if "am" in ampm_clean and h == 12:
+        h = 0
+    elif "pm" in ampm_clean and "am" not in ampm_clean:
         if 1 <= h <= 11:
             h += 12
-    elif 1 <= h <= 6:
+    elif not ampm_clean and 1 <= h <= 6:
         # En horarios universitarios, las horas 01:xx a 06:xx corresponden a la tarde (13:xx a 18:xx)
         h += 12
 
@@ -151,13 +154,6 @@ def parsear_disponibilidad(texto_disp, ampm=""):
                         for b_ini, b_fin in expandir_rango_a_bloques(h_ini, h_fin):
                             if (dia_canon, b_ini, b_fin) not in resultados:
                                 resultados.append((dia_canon, b_ini, b_fin))
-        elif dias_encontrados:
-            for d_raw in dias_encontrados:
-                dia_canon = MAPA_DIAS.get(normalizar_texto(d_raw), "Lunes")
-                for b_ini, b_fin in BLOQUES_HORARIOS[:3]:
-                    if (dia_canon, b_ini, b_fin) not in resultados:
-                        resultados.append((dia_canon, b_ini, b_fin))
-
     return resultados
 
 
@@ -501,3 +497,6 @@ def parsear_lineas_texto(lineas):
         todos_errores.extend(res["errores"])
 
     return {"insertados": total_insertados, "errores": todos_errores}
+
+
+# ═══════════════════════════════════════════════════════════════════════════

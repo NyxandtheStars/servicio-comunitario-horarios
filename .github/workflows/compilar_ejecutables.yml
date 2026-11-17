@@ -1,0 +1,116 @@
+name: Compilar Ejecutables Multiplataforma (Windows y Canaima / Debian)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - 'mejoras-layout'
+      - 'main'
+
+jobs:
+  build-windows:
+    name: Compilar para Windows (.exe)
+    runs-on: windows-latest
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Compilar con PyInstaller (Windows)
+        run: |
+          pyinstaller --noconfirm --onedir --windowed `
+            --name "SGHU_Universidad_Windows" `
+            --add-data "universidad_horarios.db;." `
+            --add-data "src;src" `
+            SGHU_Universidad.py
+
+      - name: Comprimir paquete Windows
+        run: |
+          Compress-Archive -Path dist/SGHU_Universidad_Windows -DestinationPath dist/SGHU_Universidad_Windows.zip
+
+      - name: Subir artefacto Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: SGHU_Universidad_Windows
+          path: dist/SGHU_Universidad_Windows.zip
+
+  build-linux:
+    name: Compilar para Canaima / Debian / Linux
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Compilar con PyInstaller (Linux)
+        run: |
+          pyinstaller --noconfirm --onedir --windowed \
+            --name "SGHU_Universidad_Linux" \
+            --add-data "universidad_horarios.db:." \
+            --add-data "src:src" \
+            SGHU_Universidad.py
+
+      - name: Empaquetar y comprimir para Linux / Canaima
+        run: |
+          tar -czvf dist/SGHU_Universidad_Linux_Canaima.tar.gz -C dist SGHU_Universidad_Linux
+
+      - name: Subir artefacto Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: SGHU_Universidad_Linux_Canaima
+          path: dist/SGHU_Universidad_Linux_Canaima.tar.gz
+
+  release:
+    name: Publicar GitHub Release Oficial
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - name: Descargar artefacto Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: SGHU_Universidad_Windows
+          path: release_assets
+
+      - name: Descargar artefacto Linux
+        uses: actions/download-artifact@v4
+        with:
+          name: SGHU_Universidad_Linux_Canaima
+          path: release_assets
+
+      - name: Crear GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release_assets/SGHU_Universidad_Windows.zip
+            release_assets/SGHU_Universidad_Linux_Canaima.tar.gz
+          name: Sistema de Gestión de Horarios Universitarios (UNESR) ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
