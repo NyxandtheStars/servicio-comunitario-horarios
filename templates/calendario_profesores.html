@@ -3,9 +3,10 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <div>
-        <h4 class="fw-bold mb-1 text-primary"><i class="bi bi-calendar3-week me-2"></i>2) Horario Tipo Calendario de Cada Profesor</h4>
+        <div class="text-primary small fw-bold text-uppercase mb-1">Directorio académico</div>
+        <h2 class="fw-bold mb-1">Gestión de Docentes</h2>
         <p class="text-muted small mb-0">
-            Visualiza la grilla semanal de cada profesor con todas las materias y carreras que dicta, o muéstralos todos a la vez.
+            Consulta la información disponible y los horarios semanales de cada docente.
         </p>
     </div>
     <div class="d-flex gap-2">
@@ -24,6 +25,11 @@
     </div>
 </div>
 
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="card card-stat bg-white p-3"><div class="text-muted small fw-semibold">Docentes registrados</div><div class="fs-3 fw-bold text-primary">{{ profesores|length }}</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card card-stat bg-white p-3"><div class="text-muted small fw-semibold">Con clases asignadas</div><div class="fs-3 fw-bold text-success">{{ profesores|selectattr('clases')|list|length }}</div></div></div>
+</div>
+
 <!-- Selector de Profesor -->
 <div class="card card-panel p-3 mb-4">
     <form method="GET" action="{{ url_for('calendario_profesores') }}" class="row g-2 align-items-center">
@@ -38,18 +44,58 @@
             </select>
         </div>
         <div class="col-md-7 text-md-end pt-3">
-            {% if disponibilidades and not mostrar_todos %}
-                <span class="small text-muted fw-semibold me-2">Disponibilidad declarada:</span>
-                {% for disp in disponibilidades[:6] %}
-                    <span class="badge bg-light text-secondary border">{{ disp.dia }} {{ disp.hora_inicio }}-{{ disp.hora_fin }}</span>
-                {% endfor %}
-                {% if disponibilidades|length > 6 %}
-                    <span class="badge bg-light text-secondary border">+{{ disponibilidades|length - 6 }} más</span>
-                {% endif %}
+            {% if profesor_actual and not mostrar_todos %}
+                <span class="badge bg-secondary-subtle text-secondary border fs-6">
+                    <i class="bi bi-check2-square me-1"></i>{{ disponibilidad_actual|length }} bloque(s) marcado(s) en Nueva Carga
+                </span>
             {% endif %}
         </div>
     </form>
 </div>
+
+{% if not mostrar_todos and profesor_actual %}
+<div class="card card-panel overflow-hidden mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+        <h5 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Disponibilidad marcada en Nueva Carga: Prof. {{ profesor_actual.nombre }}</h5>
+        <span class="badge text-bg-primary rounded-pill">{{ disponibilidad_actual|length }} bloques</span>
+    </div>
+    <div class="card-body">
+        {{ disponibilidad_grid(profesor_actual.id, disponibilidad_actual) }}
+        <p class="small text-muted mt-2 mb-0"><i class="bi bi-info-circle me-1"></i>Esta es exactamente la disponibilidad que el docente marcó en la sección "Disponibilidad semanal" de Nueva Carga. Abajo se muestra el horario de clases asignadas.</p>
+    </div>
+</div>
+{% endif %}
+
+{% macro disponibilidad_grid(profesor_id, disponibilidad) %}
+<div class="table-responsive border rounded-3">
+    <table class="table table-bordered table-sm text-center align-middle mb-0 availability-grid">
+        <thead class="table-light">
+            <tr>
+                <th class="text-start">Día</th>
+                {% for inicio, fin in franjas_carga %}
+                <th class="small text-nowrap">{{ inicio }}<br>{{ fin }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for dia in dias_carga %}
+            <tr>
+                <th class="text-start small">{{ dia }}</th>
+                {% for inicio, fin in franjas_carga %}
+                <td>
+                    {% if (dia ~ '|' ~ inicio ~ '|' ~ fin) in disponibilidad %}
+                    <span class="badge bg-success rounded-2 px-2 py-2" title="Marcado en Nueva Carga"><i class="bi bi-check-lg"></i></span>
+                    {% else %}
+                    <span class="text-muted opacity-25">·</span>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
 
 {% if not profesores %}
 <div class="alert alert-info text-center p-4">
@@ -140,6 +186,31 @@
             </table>
         </div>
     </div>
+{% endif %}
+
+{% if profesores %}
+<section class="card card-panel mt-4 overflow-hidden">
+    <div class="card-header bg-white p-3">
+        <h5 class="fw-bold mb-0">Directorio de docentes</h5>
+        <p class="small text-muted mb-0">Selecciona un docente para abrir su calendario semanal.</p>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase"><tr><th>Docente</th><th>Cédula</th><th>Correo</th><th>Cursos</th><th></th></tr></thead>
+            <tbody>
+                {% for p in profesores %}
+                <tr>
+                    <td class="fw-semibold">{{ p.nombre }}</td>
+                    <td>{{ p.cedula or '—' }}</td>
+                    <td>{{ p.email or '—' }}</td>
+                    <td><span class="badge bg-primary-subtle text-primary">{{ p.clases }}</span></td>
+                    <td class="text-end"><a class="btn btn-outline-primary btn-sm" href="{{ url_for('calendario_profesores', profesor_id=p.id) }}">Ver horario</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
 {% endif %}
 
 {% endblock %}

@@ -3,25 +3,123 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <div>
-        <h4 class="fw-bold mb-1 text-primary"><i class="bi bi-table me-2"></i>1) Oferta Académica General de la Universidad</h4>
+        <div class="text-primary small fw-bold text-uppercase mb-1">Gestión académica</div>
+        <h2 class="fw-bold mb-1">Horarios</h2>
         <p class="text-muted small mb-0">
             Organizada por Facultad y con los profesores ordenados alfabéticamente. Puedes filtrar o editar cualquier salón/hora manualmente.
         </p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2 align-items-stretch">
+        <form action="{{ url_for('autoasignar_ambientes') }}" method="POST" class="d-inline">
+            <button type="submit" class="btn btn-success fw-semibold action-button">
+                <i class="bi bi-arrow-left-right me-1"></i> Autoasignar a ambientes libres
+            </button>
+        </form>
         <form action="{{ url_for('reorganizar') }}" method="POST" class="d-inline">
-            <button type="submit" class="btn btn-outline-primary btn-sm fw-semibold">
+            <button type="submit" class="btn btn-outline-primary fw-semibold action-button">
                 <i class="bi bi-arrow-repeat me-1"></i> Reorganizar Automáticamente
             </button>
         </form>
-        <a href="{{ url_for('reporte_imprimible', tipo='general', facultad_id=filtros.facultad_id, print='1') }}" target="_blank" class="btn btn-warning btn-sm fw-bold">
+        <a href="{{ url_for('reporte_imprimible', tipo='general', facultad_id=filtros.facultad_id, print='1') }}" target="_blank" class="btn btn-warning fw-bold action-button">
             <i class="bi bi-printer-fill me-1"></i> Imprimir / Guardar PDF de Oferta
         </a>
-        <a href="{{ url_for('reporte_imprimible', tipo='general', facultad_id=filtros.facultad_id, descargar='1') }}" class="btn btn-dark btn-sm">
+        <a href="{{ url_for('reporte_imprimible', tipo='general', facultad_id=filtros.facultad_id, descargar='1') }}" class="btn btn-dark action-button">
             <i class="bi bi-download me-1"></i> Descargar .HTML
         </a>
     </div>
 </div>
+
+<style>
+    .action-button { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+</style>
+
+<section class="card card-panel mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Colisiones de horario</h5>
+        <span class="badge {{ 'bg-danger' if conflictos_horario else 'bg-success' }}">{{ conflictos_horario|length }} conflicto(s)</span>
+    </div>
+    {% if conflictos_horario %}
+    <div class="list-group list-group-flush">
+        {% for conflicto in conflictos_horario %}
+        <div class="list-group-item py-3">
+            <div class="d-flex flex-wrap justify-content-between gap-2">
+                <div>
+                    <span class="badge bg-danger me-1">{{ conflicto.motivos }}</span>
+                    <strong>{{ conflicto.dia }}</strong>
+                    <span class="text-muted">{{ conflicto.hora_inicio }} - {{ conflicto.hora_fin }}</span>
+                </div>
+            </div>
+            <div class="row g-2 mt-1 small">
+                <div class="col-md-6">
+                    <strong>{{ conflicto.profesor_a }}</strong> · {{ conflicto.materia_a }} · <span class="text-primary">{{ conflicto.ambiente_a }}</span>
+                    <form action="{{ url_for('editar_asignacion') }}" method="POST" class="row g-1 mt-2">
+                        <input type="hidden" name="asignacion_id" value="{{ conflicto.asignacion_a }}">
+                        <div class="col-4">
+                            <select name="salon_id" class="form-select form-select-sm" aria-label="Ambiente">
+                                {% for s in salones %}
+                                <option value="{{ s.id }}" {% if s.id == conflicto.salon_a_id %}selected{% endif %}>{{ s.codigo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <select name="dia" class="form-select form-select-sm" aria-label="Día">
+                                {% for dia in dias_orden %}
+                                <option value="{{ dia }}" {% if dia == conflicto.dia %}selected{% endif %}>{{ dia }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <select name="rango_hora" class="form-select form-select-sm" aria-label="Horario">
+                                {% for inicio, fin in bloques_horarios %}
+                                <option value="{{ inicio }}-{{ fin }}" {% if inicio == conflicto.hora_inicio and fin == conflicto.hora_fin %}selected{% endif %}>{{ inicio }} - {{ fin }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-2">
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100" title="Modificar asignación">Modificar</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <strong>{{ conflicto.profesor_b }}</strong> · {{ conflicto.materia_b }} · <span class="text-primary">{{ conflicto.ambiente_b }}</span>
+                    <form action="{{ url_for('editar_asignacion') }}" method="POST" class="row g-1 mt-2">
+                        <input type="hidden" name="asignacion_id" value="{{ conflicto.asignacion_b }}">
+                        <div class="col-4">
+                            <select name="salon_id" class="form-select form-select-sm" aria-label="Ambiente">
+                                {% for s in salones %}
+                                <option value="{{ s.id }}" {% if s.id == conflicto.salon_b_id %}selected{% endif %}>{{ s.codigo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <select name="dia" class="form-select form-select-sm" aria-label="Día">
+                                {% for dia in dias_orden %}
+                                <option value="{{ dia }}" {% if dia == conflicto.dia %}selected{% endif %}>{{ dia }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <select name="rango_hora" class="form-select form-select-sm" aria-label="Horario">
+                                {% for inicio, fin in bloques_horarios %}
+                                <option value="{{ inicio }}-{{ fin }}" {% if inicio == conflicto.hora_inicio and fin == conflicto.hora_fin %}selected{% endif %}>{{ inicio }} - {{ fin }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-2">
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100" title="Modificar asignación">Modificar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card-body text-success fw-semibold">
+        <i class="bi bi-check-circle-fill me-1"></i>No quedan colisiones visibles.
+    </div>
+    {% endif %}
+</section>
 
 <!-- Barra de Filtros -->
 <div class="card card-panel p-3 mb-4">
@@ -76,7 +174,7 @@
 {% if not por_facultad %}
 <div class="alert alert-info text-center p-4">
     <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
-    No hay horarios registrados con los filtros seleccionados. Ve al panel de inicio para cargar un archivo Excel, Word, TXT o los datos de demostración.
+    No hay horarios registrados con los filtros seleccionados. Ve a Nueva Carga para incorporar una planificación.
 </div>
 {% else %}
     {% for facultad_nombre, lista_clases in por_facultad.items() %}

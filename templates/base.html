@@ -3,148 +3,297 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGHU - Sistema de Gestión de Horarios Universitarios</title>
+    <title>UNESR - Sistema de Gestión de Oferta Académica</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
         :root {
-            --univ-primary: #1e3a8a;
+            --univ-primary: #1d4ed8;
             --univ-secondary: #0f172a;
-            --univ-accent: #2563eb;
+            --univ-accent: #6d28d9;
+            --app-bg: #f8fafc;
+            --app-border: #e2e8f0;
+            --app-muted: #64748b;
+            --bs-primary: #1d4ed8;
+            --bs-primary-rgb: 29, 78, 216;
         }
+        * { box-sizing: border-box; }
         body {
-            background-color: #f8fafc;
+            background: var(--app-bg);
+            color: #0f172a;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            color: #1e293b;
+            margin: 0;
         }
-        .navbar-univ {
-            background: linear-gradient(135deg, var(--univ-secondary) 0%, var(--univ-primary) 100%);
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+        .app-sidebar {
+            background: #fff;
+            border-right: 1px solid var(--app-border);
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            left: 0;
+            padding: 18px 14px;
+            position: fixed;
+            top: 0;
+            width: 258px;
+            z-index: 1035;
         }
+        .brand-link {
+            align-items: center;
+            color: inherit;
+            display: flex;
+            gap: 12px;
+            margin: 0 0 18px;
+            padding: 3px 4px;
+            text-decoration: none;
+        }
+        .brand-mark {
+            align-items: center;
+            background: #fff;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            display: inline-flex;
+            flex: 0 0 46px;
+            height: 46px;
+            justify-content: center;
+            overflow: hidden;
+            padding: 3px;
+        }
+        .brand-mark img { height: 100%; object-fit: contain; width: 100%; }
+        .brand-copy { line-height: 1.2; }
+        .brand-copy strong { display: block; font-size: 15px; }
+        .brand-copy small { color: var(--app-muted); display: block; font-size: 11px; margin-top: 3px; }
+        .period-pill {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 999px;
+            color: #047857;
+            font-size: 12px;
+            margin: 0 0 18px;
+            padding: 7px 12px;
+        }
+        .period-pill i { font-size: 8px; margin-right: 7px; }
+        .sidebar-caption {
+            color: #94a3b8;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            margin: 0 10px 8px;
+            text-transform: uppercase;
+        }
+        .app-sidebar .nav-link {
+            align-items: center;
+            border: 1px solid transparent;
+            border-radius: 11px;
+            color: #475569;
+            display: flex;
+            font-size: 13px;
+            font-weight: 500;
+            gap: 12px;
+            margin: 2px 0;
+            min-height: 42px;
+            padding: 9px 11px;
+            transition: background-color .15s ease, color .15s ease;
+        }
+        .app-sidebar .nav-link i { color: #64748b; font-size: 16px; }
+        .app-sidebar .nav-link:hover { background: #f1f5f9; color: #0f172a; }
+        .app-sidebar .nav-link.active {
+            background: #dbeafe;
+            border-color: #93c5fd;
+            color: #1e3a8a;
+            font-weight: 650;
+        }
+        .app-sidebar .nav-link.active i { color: var(--univ-primary); }
+        .sidebar-footer { margin-top: auto; }
+        .app-frame { margin-left: 258px; min-height: 100vh; }
+        .app-topbar {
+            align-items: center;
+            background: rgba(248, 250, 252, .94);
+            border-bottom: 1px solid rgba(226, 232, 240, .8);
+            display: flex;
+            justify-content: space-between;
+            min-height: 68px;
+            padding: 12px 28px;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+        }
+        .topbar-title { font-size: 15px; font-weight: 650; margin: 0; }
+        .topbar-subtitle { color: var(--app-muted); font-size: 12px; margin: 3px 0 0; }
+        .app-content { max-width: 1600px; padding: 26px 28px 42px; }
+        .sidebar-toggle { display: none; }
+        .sidebar-backdrop { display: none; }
         .card-stat {
-            border: none;
+            border: 1px solid #eef2f7;
             border-radius: 14px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            transition: transform 0.15s ease;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, .05);
+            min-height: 88px;
+            transition: transform .15s ease, box-shadow .15s ease;
         }
         .card-stat:hover {
-            transform: translateY(-3px);
+            box-shadow: 0 7px 18px rgba(15, 23, 42, .08);
+            transform: translateY(-2px);
         }
         .card-panel {
-            border: 1px solid #e2e8f0;
+            background: #fff;
+            border: 1px solid var(--app-border);
             border-radius: 14px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, .035);
         }
-        .badge-carrera {
-            background-color: #dbeafe;
-            color: #1e40af;
-            font-weight: 600;
+        .card-panel .card-header { border-bottom-color: var(--app-border); }
+        .btn { border-radius: 9px; }
+        .form-control, .form-select { border-color: #cbd5e1; border-radius: 9px; }
+        .form-control:focus, .form-select:focus {
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 .2rem rgba(29, 78, 216, .12);
         }
-        .badge-salon {
-            background-color: #dcfce7;
-            color: #166534;
-            font-weight: 600;
-        }
+        .table { --bs-table-hover-bg: #f8fafc; }
+        .table > :not(caption) > * > * { border-color: #e8edf4; }
+        .badge-carrera { background: #dbeafe; color: #1e40af; font-weight: 600; }
+        .badge-salon { background: #dcfce7; color: #166534; font-weight: 600; }
         .calendar-table th {
-            background-color: #1e3a8a;
-            color: #ffffff;
+            background: #1d4ed8;
+            color: #fff;
             text-align: center;
             vertical-align: middle;
         }
         .calendar-cell {
-            min-width: 145px;
+            background: #fff;
             height: 95px;
-            vertical-align: top;
-            background-color: #ffffff;
+            min-width: 145px;
             padding: 6px !important;
+            vertical-align: top;
         }
         .class-block {
             background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border-left: 4px solid #2563eb;
+            border-left: 4px solid #1d4ed8;
             border-radius: 6px;
-            padding: 6px 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+            font-size: .82rem;
             margin-bottom: 4px;
-            font-size: 0.82rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            padding: 6px 8px;
         }
-        .class-block .materia-title {
-            font-weight: 700;
-            color: #1e3a8a;
-            display: block;
+        .class-block .materia-title { color: #1e3a8a; display: block; font-weight: 700; }
+        footer.app-footer {
+            border-top: 1px solid var(--app-border);
+            color: var(--app-muted);
+            margin-top: 10px;
+            padding: 16px 24px;
+        }
+        @media (max-width: 991.98px) {
+            .app-sidebar { box-shadow: 12px 0 30px rgba(15,23,42,.12); transform: translateX(-105%); transition: transform .2s ease; }
+            body.sidebar-open .app-sidebar { transform: translateX(0); }
+            .sidebar-backdrop {
+                background: rgba(15,23,42,.35);
+                border: 0;
+                display: none;
+                inset: 0;
+                position: fixed;
+                z-index: 1030;
+            }
+            body.sidebar-open .sidebar-backdrop { display: block; }
+            .app-frame { margin-left: 0; }
+            .app-topbar { min-height: 60px; padding: 10px 16px; }
+            .sidebar-toggle { display: inline-flex; }
+            .app-content { padding: 20px 16px 32px; }
+        }
+        @media (max-width: 575.98px) {
+            .app-topbar { padding: 9px 12px; }
+            .app-content { padding: 16px 12px 26px; }
+            .app-topbar .topbar-subtitle { display: none; }
+            .app-topbar .dropdown-toggle { font-size: 0; }
+            .app-topbar .dropdown-toggle i { font-size: 16px; }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-univ py-3 mb-4">
-        <div class="container">
-            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{{ url_for('index') }}">
-                <i class="bi bi-mortarboard-fill fs-4 text-warning"></i>
-                <span>SGHU | Horarios Universitarios</span>
+    <aside class="app-sidebar" id="appSidebar" aria-label="Navegación principal">
+        <a class="brand-link" href="{{ url_for('index') }}">
+            <span class="brand-mark"><img src="{{ url_for('logo_unesr') }}" alt="Logo de la Universidad Nacional Experimental Simón Rodríguez"></span>
+            <span class="brand-copy"><strong>UNESR</strong><small>Núcleo Palo Verde</small></span>
+        </a>
+        <div class="period-pill"><i class="bi bi-circle-fill"></i> Oferta académica · 2026-2</div>
+        <div class="sidebar-caption">Menú principal</div>
+        <nav class="nav flex-column" aria-label="Secciones">
+            <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
+                <i class="bi bi-speedometer2"></i><span>Dashboard</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navMenu">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 gap-1">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'index' %}active fw-semibold{% endif %}" href="{{ url_for('index') }}">
-                            <i class="bi bi-cloud-arrow-up me-1"></i> Carga y Panel
+            <a class="nav-link {% if request.endpoint == 'nueva_carga' %}active{% endif %}" href="{{ url_for('nueva_carga') }}">
+                <i class="bi bi-plus-circle"></i><span>Nueva Carga</span>
+            </a>
+            <a class="nav-link {% if request.endpoint in ['oferta_general', 'horarios'] %}active{% endif %}" href="{{ url_for('horarios') }}">
+                <i class="bi bi-calendar-month"></i><span>Horarios</span>
+            </a>
+            <a class="nav-link {% if request.endpoint in ['ocupacion_salones', 'ambientes'] %}active{% endif %}" href="{{ url_for('ambientes') }}">
+                <i class="bi bi-door-open"></i><span>Ambientes</span>
+            </a>
+            <a class="nav-link {% if request.endpoint in ['calendario_profesores', 'docentes'] %}active{% endif %}" href="{{ url_for('docentes') }}">
+                <i class="bi bi-people"></i><span>Docentes</span>
+            </a>
+            <a class="nav-link {% if request.endpoint == 'carreras' %}active{% endif %}" href="{{ url_for('carreras') }}">
+                <i class="bi bi-mortarboard"></i><span>Carreras</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-caption">Herramientas</div>
+            <a class="nav-link" href="{{ url_for('reporte_imprimible', tipo='general', print='1') }}" target="_blank">
+                <i class="bi bi-printer"></i><span>Imprimir oferta general</span>
+            </a>
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalImprimirProfesor">
+                <i class="bi bi-calendar2-week"></i><span>Imprimir horario docente</span>
+            </a>
+            <a class="nav-link" href="{{ url_for('reporte_imprimible', tipo='completo', descargar='1') }}">
+                <i class="bi bi-download"></i><span>Descargar reporte HTML</span>
+            </a>
+            <div class="border-top mt-3 pt-3 px-2 text-muted small">
+                <i class="bi bi-shield-check me-1 text-success"></i> Universidad Simón Rodríguez
+            </div>
+        </div>
+    </aside>
+    <button class="sidebar-backdrop" type="button" aria-label="Cerrar menú" onclick="toggleSidebar(false)"></button>
+
+    <div class="app-frame">
+        <header class="app-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-light border sidebar-toggle" type="button" aria-label="Abrir menú" onclick="toggleSidebar()">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
+                <div>
+                    <h1 class="topbar-title">Universidad Nacional Experimental Simón Rodríguez</h1>
+                    <p class="topbar-subtitle">Núcleo Palo Verde · Gestión de oferta académica</p>
+                </div>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-outline-primary btn-sm fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-printer-fill me-sm-1"></i><span class="d-none d-sm-inline">Generar reporte</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li><h6 class="dropdown-header">Ver e imprimir / guardar PDF</h6></li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('reporte_imprimible', tipo='general', print='1') }}" target="_blank">
+                            <i class="bi bi-list-columns-reverse me-2 text-primary"></i> Imprimir Oferta Académica General
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'oferta_general' %}active fw-semibold{% endif %}" href="{{ url_for('oferta_general') }}">
-                            <i class="bi bi-table me-1"></i> 1) Oferta Académica General
+                    <li>
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalImprimirProfesor">
+                            <i class="bi bi-calendar-week me-2 text-success"></i> Imprimir Horario de Profesor(es)...
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'calendario_profesores' %}active fw-semibold{% endif %}" href="{{ url_for('calendario_profesores') }}">
-                            <i class="bi bi-calendar3-week me-1"></i> 2) Calendario por Profesor
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('reporte_imprimible', tipo='completo', print='1') }}" target="_blank">
+                            <i class="bi bi-journal-richtext me-2 text-danger"></i> Imprimir Reporte Completo
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'ocupacion_salones' %}active fw-semibold{% endif %}" href="{{ url_for('ocupacion_salones') }}">
-                            <i class="bi bi-building me-1"></i> Salones Multi-Carrera
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('reporte_imprimible', tipo='completo', descargar='1') }}">
+                            <i class="bi bi-download me-2"></i> Descargar Archivo HTML
                         </a>
                     </li>
                 </ul>
-                <div class="d-flex gap-2">
-                    <div class="dropdown">
-                        <button class="btn btn-warning btn-sm fw-bold dropdown-toggle d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-printer-fill"></i> 3) Generar HTML / PDF Imprimible
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow">
-                            <li><h6 class="dropdown-header">Ver e Imprimir / Guardar PDF</h6></li>
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('reporte_imprimible', tipo='general', print='1') }}" target="_blank">
-                                    <i class="bi bi-list-columns-reverse me-2 text-primary"></i> Imprimir Oferta Académica General
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalImprimirProfesor">
-                                    <i class="bi bi-calendar-week me-2 text-success"></i> Imprimir Horario de Profesor(es)...
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('reporte_imprimible', tipo='completo', print='1') }}" target="_blank">
-                                    <i class="bi bi-journal-richtext me-2 text-danger"></i> Imprimir Reporte Completo (Oferta + Calendarios)
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">Descargar Archivo .HTML Independiente</h6></li>
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('reporte_imprimible', tipo='completo', descargar='1') }}">
-                                    <i class="bi bi-download me-2 text-dark"></i> Descargar Archivo HTML para Impresión
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
             </div>
-        </div>
-    </nav>
+        </header>
 
-    <main class="container pb-5">
+    <main class="app-content">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -215,14 +364,23 @@
         </div>
     </div>
 
-    <footer class="border-top bg-white py-3 mt-auto">
-        <div class="container text-center text-muted small">
-            Proyecto de Servicio Comunitario Universitario &bull; Sistema Organizador de Horarios por Facultad y Profesor (Python + SQLite)
+    <footer class="app-footer text-center small">
+        <div>
+            Universidad Nacional Experimental Simón Rodríguez &bull; Núcleo Palo Verde &bull; Oferta académica 2026-2
         </div>
     </footer>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function toggleSidebar(forceClose) {
+            if (typeof forceClose === 'boolean') {
+                document.body.classList.toggle('sidebar-open', !forceClose);
+                return;
+            }
+            document.body.classList.toggle('sidebar-open');
+        }
+
         function toggleSelectProfesorModal() {
             const esUno = document.getElementById('radioUnProf').checked;
             const contenedor = document.getElementById('contenedorSelectProfModal');

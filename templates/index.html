@@ -1,266 +1,146 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- Estadísticas rápidas -->
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <div class="text-primary small fw-bold text-uppercase mb-1">Núcleo Palo Verde · Período 2026-2</div>
+        <h2 class="fw-bold mb-1">Dashboard</h2>
+        <p class="text-muted mb-0">Resumen de la oferta académica y accesos a las herramientas de gestión.</p>
+    </div>
+    <a href="{{ url_for('nueva_carga') }}" class="btn btn-primary fw-semibold">
+        <i class="bi bi-plus-lg me-1"></i> Nueva Carga
+    </a>
+</div>
+
 <div class="row g-3 mb-4">
-    <div class="col-6 col-md-2">
-        <div class="card card-stat bg-white p-3 text-center">
-            <div class="text-primary fs-3 fw-bold">{{ stats.facultades }}</div>
-            <div class="text-muted small fw-semibold">Facultades</div>
+    <div class="col-6 col-xl-3">
+        <div class="card card-stat bg-white p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div><div class="text-muted small fw-semibold">Cursos activos</div><div class="text-primary fs-3 fw-bold">{{ stats.clases_programadas }}</div></div>
+                <span class="rounded-3 bg-primary-subtle text-primary p-2"><i class="bi bi-journal-bookmark fs-5"></i></span>
+            </div>
+            <div class="text-muted small">Bloques en el horario</div>
         </div>
     </div>
-    <div class="col-6 col-md-2">
-        <div class="card card-stat bg-white p-3 text-center">
-            <div class="text-info fs-3 fw-bold">{{ stats.carreras }}</div>
-            <div class="text-muted small fw-semibold">Carreras</div>
+    <div class="col-6 col-xl-3">
+        <div class="card card-stat bg-white p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div><div class="text-muted small fw-semibold">Ambientes en uso</div><div class="text-warning fs-3 fw-bold">{{ stats.ambientes_en_uso }}<span class="fs-6 text-muted"> / {{ stats.salones }}</span></div></div>
+                <span class="rounded-3 bg-warning-subtle text-warning p-2"><i class="bi bi-door-open fs-5"></i></span>
+            </div>
+            <div class="text-muted small">De {{ stats.salones }} ambientes registrados</div>
         </div>
     </div>
-    <div class="col-6 col-md-2">
-        <div class="card card-stat bg-white p-3 text-center">
-            <div class="text-success fs-3 fw-bold">{{ stats.profesores }}</div>
-            <div class="text-muted small fw-semibold">Profesores</div>
+    <div class="col-6 col-xl-3">
+        <div class="card card-stat bg-white p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div><div class="text-muted small fw-semibold">Docentes activos</div><div class="text-info fs-3 fw-bold">{{ stats.profesores_activos }}</div></div>
+                <span class="rounded-3 bg-info-subtle text-info p-2"><i class="bi bi-people fs-5"></i></span>
+            </div>
+            <div class="text-muted small">{{ stats.profesores }} docentes en el directorio</div>
         </div>
     </div>
-    <div class="col-6 col-md-2">
-        <div class="card card-stat bg-white p-3 text-center">
-            <div class="text-warning fs-3 fw-bold">{{ stats.materias }}</div>
-            <div class="text-muted small fw-semibold">Materias</div>
-        </div>
-    </div>
-    <div class="col-6 col-md-2">
-        <div class="card card-stat bg-white p-3 text-center">
-            <div class="text-secondary fs-3 fw-bold">{{ stats.salones }}</div>
-            <div class="text-muted small fw-semibold">Salones</div>
-        </div>
-    </div>
-    <div class="col-6 col-md-2">
-        <div class="card card-stat bg-primary text-white p-3 text-center">
-            <div class="fs-3 fw-bold">{{ stats.clases_programadas }}</div>
-            <div class="small fw-semibold">Clases Asignadas</div>
+    <div class="col-6 col-xl-3">
+        <div class="card card-stat bg-white p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div><div class="text-muted small fw-semibold">Conflictos</div><div class="fs-3 fw-bold {% if stats.conflictos %}text-danger{% else %}text-success{% endif %}">{{ stats.conflictos }}</div></div>
+                <span class="rounded-3 {% if stats.conflictos %}bg-danger-subtle text-danger{% else %}bg-success-subtle text-success{% endif %} p-2"><i class="bi {% if stats.conflictos %}bi-exclamation-triangle{% else %}bi-patch-check{% endif %} fs-5"></i></span>
+            </div>
+            <div class="text-muted small">{% if stats.conflictos %}Superposiciones de horario{% else %}Sin colisiones de horario{% endif %}</div>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Columna Izquierda: Subida de Archivos (.xlsx, .docx, .txt) -->
-    <div class="col-lg-7">
-        <div class="card card-panel p-4 mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0 text-primary">
-                    <i class="bi bi-file-earmark-arrow-up-fill me-2"></i>Cargar Profesores y Disponibilidad (.xlsx, .docx, .txt)
-                </h5>
-                <form action="{{ url_for('cargar_demo') }}" method="POST" class="d-inline">
-                    <button type="submit" class="btn btn-outline-primary btn-sm fw-semibold">
-                        <i class="bi bi-magic me-1"></i> Cargar Datos de Ejemplo
-                    </button>
-                </form>
+<div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-3">
+        <a href="{{ url_for('nueva_carga') }}" class="card card-panel h-100 p-3 text-decoration-none text-reset">
+            <div class="d-flex gap-3 align-items-start">
+                <span class="rounded-3 bg-primary-subtle text-primary p-2"><i class="bi bi-plus-circle fs-5"></i></span>
+                <div><h6 class="fw-bold mb-1">Nueva Carga</h6><p class="small text-muted mb-0">Registra docentes y asignaturas o importa una planificación.</p></div>
             </div>
-            <p class="text-muted small mb-3">
-                Sube un archivo en formato <strong>Excel (.xlsx)</strong>, <strong>Word (.docx)</strong> o <strong>Texto (.txt)</strong> con los profesores, la facultad y carrera que dictan, sus materias (un profesor puede dar varias materias) y su horario disponible. El sistema asignará salones y horarios sin choques automáticamente.
-            </p>
-
-            <form action="{{ url_for('cargar_archivo') }}" method="POST" enctype="multipart/form-data" class="border rounded-3 p-3 bg-light mb-3">
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Selecciona el archivo (.xlsx, .docx, .txt):</label>
-                    <input type="file" name="archivo" class="form-control" accept=".xlsx,.docx,.txt,.csv" required>
-                </div>
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" name="limpiar_previo" value="si" id="chkLimpiar">
-                    <label class="form-check-label small text-muted" for="chkLimpiar">
-                        Reemplazar datos anteriores antes de importar este archivo
-                    </label>
-                </div>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary fw-semibold px-4">
-                        <i class="bi bi-gear-wide-connected me-1"></i> Procesar Archivo y Generar Horarios
-                    </button>
-                </div>
-            </form>
-
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 border-top">
-                <span class="small text-muted fw-semibold">Descargar plantillas de prueba listas para usar:</span>
-                <div class="btn-group btn-group-sm">
-                    <a href="{{ url_for('descargar_plantilla', formato='xlsx') }}" class="btn btn-outline-success">
-                        <i class="bi bi-file-earmark-excel me-1"></i> Plantilla Excel (.xlsx)
-                    </a>
-                    <a href="{{ url_for('descargar_plantilla', formato='docx') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-file-earmark-word me-1"></i> Plantilla Word (.docx)
-                    </a>
-                    <a href="{{ url_for('descargar_plantilla', formato='txt') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-file-earmark-text me-1"></i> Plantilla Texto (.txt)
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Accesos Directos a los 3 Requerimientos Principales -->
-        <div class="card card-panel p-4">
-            <h5 class="fw-bold mb-3"><i class="bi bi-compass me-2 text-primary"></i>Reportes y Vistas del Sistema</h5>
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <div class="border rounded-3 p-3 h-100 d-flex flex-column justify-content-between bg-light">
-                        <div>
-                            <span class="badge bg-primary mb-2">Opción 1</span>
-                            <h6 class="fw-bold">Oferta Académica General</h6>
-                            <p class="small text-muted mb-2">Muestra por facultad qué profesor da cada materia, en qué salón, día, hora y carrera.</p>
-                        </div>
-                        <a href="{{ url_for('oferta_general') }}" class="btn btn-primary btn-sm w-100 fw-semibold">
-                            Ver Oferta General <i class="bi bi-arrow-right ms-1"></i>
-                        </a>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="border rounded-3 p-3 h-100 d-flex flex-column justify-content-between bg-light">
-                        <div>
-                            <span class="badge bg-success mb-2">Opción 2</span>
-                            <h6 class="fw-bold">Calendario por Profesor</h6>
-                            <p class="small text-muted mb-2">Horario visual tipo calendario semanal (Lunes a Sábado) para cada profesor ordenado.</p>
-                        </div>
-                        <a href="{{ url_for('calendario_profesores') }}" class="btn btn-success btn-sm w-100 fw-semibold">
-                            Ver Calendarios <i class="bi bi-calendar3 ms-1"></i>
-                        </a>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="border rounded-3 p-3 h-100 d-flex flex-column justify-content-between bg-light">
-                        <div>
-                            <span class="badge bg-warning text-dark mb-2">Opción 3</span>
-                            <h6 class="fw-bold">Exportar HTML / PDF</h6>
-                            <p class="small text-muted mb-2">Genera un archivo HTML con formato oficial universitario listo para imprimir o guardar en PDF.</p>
-                        </div>
-                        <div class="d-grid gap-1">
-                            <button type="button" class="btn btn-warning btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#modalImprimirProfesor">
-                                <i class="bi bi-printer me-1"></i> Imprimir Horario Profesor(es)
-                            </button>
-                            <a href="{{ url_for('reporte_imprimible', tipo='completo', print='1') }}" target="_blank" class="btn btn-outline-dark btn-sm">
-                                <i class="bi bi-journal-richtext me-1"></i> Imprimir Reporte Completo
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </a>
     </div>
-
-    <!-- Columna Derecha: Registro Manual Rápido y Gestión de Salones -->
-    <div class="col-lg-5">
-        <div class="card card-panel p-4 mb-4">
-            <h5 class="fw-bold mb-3 text-primary">
-                <i class="bi bi-person-plus-fill me-2"></i>Agregar Profesor / Materia Manualmente
-            </h5>
-            <form action="{{ url_for('agregar_manual') }}" method="POST" class="row g-2">
-                <div class="col-md-6">
-                    <label class="form-label small fw-semibold mb-1">Facultad</label>
-                    <input type="text" name="facultad" class="form-control form-control-sm" placeholder="Ej: Facultad de Ingeniería" required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label small fw-semibold mb-1">Carrera</label>
-                    <input type="text" name="carrera" class="form-control form-control-sm" placeholder="Ej: Ingeniería de Sistemas" required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label small fw-semibold mb-1">Nombre del Profesor</label>
-                    <input type="text" name="profesor" class="form-control form-control-sm" placeholder="Ej: Juan Pérez" required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label small fw-semibold mb-1">Materia(s)</label>
-                    <input type="text" name="materia" class="form-control form-control-sm" placeholder="Ej: Cálculo I" required>
-                </div>
-                <div class="col-12">
-                    <label class="form-label small fw-semibold mb-1">Disponibilidad Horaria</label>
-                    <input type="text" name="disponibilidad" class="form-control form-control-sm" placeholder="Ej: Lunes 07:00-11:00; Miércoles 09:00-13:00" required>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small fw-semibold mb-1">Salón Preferido</label>
-                    <select name="salon_preferido" class="form-select form-select-sm">
-                        <option value="">Cualquiera libre</option>
-                        {% for s in salones %}
-                            <option value="{{ s.codigo }}">{{ s.codigo }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small fw-semibold mb-1">Sección</label>
-                    <input type="text" name="seccion" class="form-control form-control-sm" value="Sección A">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small fw-semibold mb-1">Bloques/Sem</label>
-                    <select name="bloques" class="form-select form-select-sm">
-                        <option value="1">1 bloque (2h)</option>
-                        <option value="2">2 bloques (4h)</option>
-                        <option value="3">3 bloques (6h)</option>
-                    </select>
-                </div>
-                <div class="col-12 mt-2">
-                    <button type="submit" class="btn btn-outline-primary btn-sm w-100 fw-semibold">
-                        <i class="bi bi-plus-circle me-1"></i> Guardar y Asignar Horario
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <div class="card card-panel p-4">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="fw-bold mb-0"><i class="bi bi-door-open-fill me-2 text-secondary"></i>Agregar Nuevo Salón</h6>
-                <form action="{{ url_for('limpiar_datos') }}" method="POST" onsubmit="return confirm('¿Seguro que deseas borrar todos los horarios cargados?');">
-                    <button type="submit" class="btn btn-link text-danger btn-sm p-0 text-decoration-none">
-                        <i class="bi bi-trash3"></i> Vaciar BD
-                    </button>
-                </form>
+    <div class="col-md-6 col-xl-3">
+        <a href="{{ url_for('oferta_general') }}" class="card card-panel h-100 p-3 text-decoration-none text-reset">
+            <div class="d-flex gap-3 align-items-start">
+                <span class="rounded-3 bg-info-subtle text-info p-2"><i class="bi bi-calendar-week fs-5"></i></span>
+                <div><h6 class="fw-bold mb-1">Horarios</h6><p class="small text-muted mb-0">Consulta, filtra y ajusta la oferta académica.</p></div>
             </div>
-            <form action="{{ url_for('agregar_salon') }}" method="POST" class="row g-2 align-items-end">
-                <div class="col-5">
-                    <label class="form-label small text-muted mb-1">Código Salón</label>
-                    <input type="text" name="codigo" class="form-control form-control-sm" placeholder="Ej: Aula 405" required>
-                </div>
-                <div class="col-4">
-                    <label class="form-label small text-muted mb-1">Edificio</label>
-                    <input type="text" name="edificio" class="form-control form-control-sm" value="Edificio A">
-                </div>
-                <div class="col-3">
-                    <button type="submit" class="btn btn-secondary btn-sm w-100">Añadir</button>
-                </div>
-            </form>
-        </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <a href="{{ url_for('ocupacion_salones') }}" class="card card-panel h-100 p-3 text-decoration-none text-reset">
+            <div class="d-flex gap-3 align-items-start">
+                <span class="rounded-3 bg-warning-subtle text-warning p-2"><i class="bi bi-building fs-5"></i></span>
+                <div><h6 class="fw-bold mb-1">Ambientes</h6><p class="small text-muted mb-0">Revisa la disponibilidad y ocupación por salón.</p></div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <a href="{{ url_for('calendario_profesores') }}" class="card card-panel h-100 p-3 text-decoration-none text-reset">
+            <div class="d-flex gap-3 align-items-start">
+                <span class="rounded-3 bg-success-subtle text-success p-2"><i class="bi bi-person-vcard fs-5"></i></span>
+                <div><h6 class="fw-bold mb-1">Docentes</h6><p class="small text-muted mb-0">Abre el directorio y revisa horarios semanales.</p></div>
+            </div>
+        </a>
     </div>
 </div>
 
-{% if oferta_reciente %}
-<div class="card card-panel p-4 mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-bold mb-0"><i class="bi bi-eye me-2 text-primary"></i>Vista Rápida de Clases Programadas</h5>
-        <a href="{{ url_for('oferta_general') }}" class="btn btn-sm btn-outline-primary">Ver Toda la Oferta Académica &rarr;</a>
+<section class="card card-panel mb-4">
+    <div class="card-header bg-white p-3">
+        <h5 class="fw-bold mb-0">Oferta por carrera</h5>
+        <p class="small text-muted mb-0">Materias y bloques asignados en cada carrera.</p>
     </div>
+    {% if distribucion_carreras %}
+    <div class="row g-2 p-3">
+        {% for carrera in distribucion_carreras %}
+        <div class="col-md-6 col-xl-4">
+            <a href="{{ url_for('horarios', carrera_id=carrera.id) }}" class="d-flex align-items-center gap-3 p-3 bg-light border rounded-3 h-100 text-decoration-none text-reset">
+                <span class="rounded-2 bg-primary" style="width: 4px; min-height: 38px;"></span>
+                <span class="flex-grow-1 min-w-0">
+                    <span class="d-block fw-semibold text-truncate">{{ carrera.nombre }}</span>
+                    <span class="d-block small text-muted text-truncate">{{ carrera.facultad_nombre }} · {{ carrera.materias }} materias</span>
+                </span>
+                <span class="badge rounded-pill bg-primary-subtle text-primary">{{ carrera.clases }} bloques</span>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-4 small text-muted">Las carreras aparecerán aquí al cargar la planificación académica.</div>
+    {% endif %}
+</section>
+
+<section class="card card-panel overflow-hidden">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2 p-3">
+        <div><h5 class="fw-bold mb-0">Carga académica reciente</h5><p class="small text-muted mb-0">Últimos bloques registrados en el sistema.</p></div>
+        <a href="{{ url_for('oferta_general') }}" class="btn btn-outline-primary btn-sm">Ver todos los horarios <i class="bi bi-arrow-right ms-1"></i></a>
+    </div>
+    {% if oferta_reciente %}
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 small">
-            <thead class="table-light">
-                <tr>
-                    <th>Facultad</th>
-                    <th>Profesor (Ordenado)</th>
-                    <th>Materia</th>
-                    <th>Carrera</th>
-                    <th>Día y Hora</th>
-                    <th>Salón Asignado</th>
-                    <th>Resumen Descriptivo</th>
-                </tr>
-            </thead>
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase"><tr><th>Docente</th><th>Carrera</th><th>Materia</th><th>Día y hora</th><th>Ambiente</th></tr></thead>
             <tbody>
                 {% for item in oferta_reciente %}
                 <tr>
-                    <td class="fw-semibold text-secondary">{{ item.facultad_nombre }}</td>
-                    <td class="fw-bold text-dark"><i class="bi bi-person-badge me-1 text-primary"></i>{{ item.profesor_nombre }}</td>
-                    <td class="fw-semibold">{{ item.materia_nombre }} <span class="text-muted">({{ item.seccion }})</span></td>
+                    <td><a href="{{ url_for('calendario_profesores', profesor_id=item.profesor_id) }}" class="text-decoration-none fw-semibold">{{ item.profesor_nombre }}</a></td>
                     <td><span class="badge badge-carrera">{{ item.carrera_nombre }}</span></td>
-                    <td><span class="fw-semibold">{{ item.dia }}</span> {{ item.hora_inicio }} a {{ item.hora_fin }}</td>
-                    <td><span class="badge badge-salon"><i class="bi bi-geo-alt-fill me-1"></i>{{ item.salon_codigo }}</span></td>
-                    <td class="text-muted fst-italic">
-                        El profesor <strong>{{ item.profesor_nombre }}</strong> dará clase los <strong>{{ item.dia }}</strong> en <strong>{{ item.salon_codigo }}</strong> de <strong>{{ item.hora_inicio }} a {{ item.hora_fin }}</strong> de <strong>{{ item.materia_nombre }}</strong> ({{ item.carrera_nombre }}).
-                    </td>
+                    <td><div class="fw-semibold">{{ item.materia_nombre }}</div><span class="small text-muted">{{ item.seccion }}</span></td>
+                    <td class="text-nowrap">{{ item.dia }} · {{ item.hora_inicio }}–{{ item.hora_fin }}</td>
+                    <td><a href="{{ url_for('ocupacion_salones', salon_id=item.salon_id) }}" class="badge badge-salon text-decoration-none">{{ item.salon_codigo }}</a></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-</div>
-{% endif %}
+    {% else %}
+    <div class="text-center p-5">
+        <i class="bi bi-inbox text-muted fs-1"></i>
+        <h6 class="fw-bold mt-2">Aún no hay horarios cargados</h6>
+        <p class="text-muted small">Registra una nueva carga o importa la planificación del período.</p>
+        <a href="{{ url_for('nueva_carga') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Ir a Nueva Carga</a>
+    </div>
+    {% endif %}
+</section>
 
 {% endblock %}

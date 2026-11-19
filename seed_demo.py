@@ -103,36 +103,39 @@ def crear_archivos_ejemplo(directorio_base):
 
     # 1. Crear archivo Excel (.xlsx)
     ruta_xlsx = os.path.join(carpeta, "plantilla_profesores.xlsx")
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Carga Académica"
-    for fila in DATOS_DEMO:
-        ws.append(fila)
-    wb.save(ruta_xlsx)
+    if not os.path.exists(ruta_xlsx):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Carga Académica"
+        for fila in DATOS_DEMO:
+            ws.append(fila)
+        wb.save(ruta_xlsx)
 
     # 2. Crear archivo Word (.docx)
     ruta_docx = os.path.join(carpeta, "plantilla_profesores.docx")
-    doc = docx.Document()
-    doc.add_heading("Oferta y Disponibilidad de Profesores - Universidad", level=1)
-    doc.add_paragraph(
-        "Tabla de entrada con los profesores, facultades, carreras, materias y disponibilidad horaria."
-    )
-    tabla = doc.add_table(rows=1, cols=len(DATOS_DEMO[0]))
-    hdr_cells = tabla.rows[0].cells
-    for i, encabezado in enumerate(DATOS_DEMO[0]):
-        hdr_cells[i].text = encabezado
+    if not os.path.exists(ruta_docx):
+        doc = docx.Document()
+        doc.add_heading("Oferta y Disponibilidad de Profesores - Universidad", level=1)
+        doc.add_paragraph(
+            "Tabla de entrada con los profesores, facultades, carreras, materias y disponibilidad horaria."
+        )
+        tabla = doc.add_table(rows=1, cols=len(DATOS_DEMO[0]))
+        hdr_cells = tabla.rows[0].cells
+        for i, encabezado in enumerate(DATOS_DEMO[0]):
+            hdr_cells[i].text = encabezado
 
-    for fila in DATOS_DEMO[1:]:
-        row_cells = tabla.add_row().cells
-        for i, val in enumerate(fila):
-            row_cells[i].text = str(val)
-    doc.save(ruta_docx)
+        for fila in DATOS_DEMO[1:]:
+            row_cells = tabla.add_row().cells
+            for i, val in enumerate(fila):
+                row_cells[i].text = str(val)
+        doc.save(ruta_docx)
 
     # 3. Crear archivo Texto (.txt)
     ruta_txt = os.path.join(carpeta, "plantilla_profesores.txt")
-    with open(ruta_txt, "w", encoding="utf-8") as f:
-        for fila in DATOS_DEMO:
-            f.write(" | ".join(str(x) for x in fila) + "\n")
+    if not os.path.exists(ruta_txt):
+        with open(ruta_txt, "w", encoding="utf-8") as f:
+            for fila in DATOS_DEMO:
+                f.write(" | ".join(str(x) for x in fila) + "\n")
 
     return {
         "xlsx": ruta_xlsx,

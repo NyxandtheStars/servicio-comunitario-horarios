@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="mb-4">
+    <div class="text-primary small fw-bold text-uppercase mb-1">Catálogo académico</div>
+    <h2 class="fw-bold mb-1">Gestión de Carreras</h2>
+    <p class="text-muted mb-0">Agrega o modifica carreras, facultades y programas nacionales de formación.</p>
+</div>
+
+<section class="card card-panel mb-4">
+    <div class="card-body">
+        <h5 class="fw-bold mb-3">Agregar carrera o PNF</h5>
+        <form method="post" action="{{ url_for('guardar_carrera_web') }}" class="row g-3">
+            <div class="col-md-5">
+                <label for="nueva-carrera" class="form-label">Nombre</label>
+                <input id="nueva-carrera" name="nombre" class="form-control" required maxlength="120">
+            </div>
+            <div class="col-md-5">
+                <label for="nueva-facultad" class="form-label">Facultad o categoría</label>
+                <input id="nueva-facultad" name="facultad" class="form-control"
+                       list="facultades-disponibles"
+                       placeholder="Ej.: Facultad de Educación o {{ facultad_pnf }}" required maxlength="120">
+                <datalist id="facultades-disponibles">
+                    {% for facultad in facultades %}
+                    <option value="{{ facultad.nombre }}">
+                    {% endfor %}
+                </datalist>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100" type="submit">
+                    <i class="bi bi-plus-lg me-1"></i>Agregar
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+{% if carreras %}
+<div class="row g-3">
+    {% for carrera in carreras %}
+    <div class="col-xl-6">
+        <section class="card card-panel h-100 overflow-hidden">
+            <div class="card-header bg-white d-flex justify-content-between align-items-start gap-3 p-3">
+                <div>
+                    <div class="small text-muted mb-1">{{ carrera.facultad }}</div>
+                    <h5 class="fw-bold mb-0">{{ carrera.nombre }}</h5>
+                </div>
+                <span class="badge rounded-pill text-bg-primary">{{ carrera.materias|length }} materias</span>
+            </div>
+            {% if carrera.materias %}
+            <div class="card-body border-top py-2 px-3 d-flex justify-content-between align-items-center gap-3">
+                <span class="small text-muted"><i class="bi bi-collection me-1"></i>Todas las materias de la carrera</span>
+                <button class="btn btn-sm btn-outline-primary toggle-ver-mas" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#materias-carrera-{{ carrera.id }}"
+                        aria-expanded="false" aria-controls="materias-carrera-{{ carrera.id }}">
+                    <span class="ver-mas"><i class="bi bi-chevron-down me-1"></i>Ver más</span>
+                    <span class="ver-menos d-none"><i class="bi bi-chevron-up me-1"></i>Ver menos</span>
+                </button>
+            </div>
+            <div class="collapse" id="materias-carrera-{{ carrera.id }}">
+                <div class="list-group list-group-flush">
+                    {% for materia in carrera.materias %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center gap-3 py-2">
+                        <div class="min-w-0">
+                            <div class="fw-semibold">{{ materia.nombre }}</div>
+                            <div class="small text-muted">{{ materia.codigo or 'Sin código' }}</div>
+                        </div>
+                        <span class="badge bg-light text-secondary border text-nowrap">{{ materia.semestre or 'Sin ciclo' }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="p-3 small text-muted">Esta carrera aún no tiene materias registradas.</div>
+            {% endif %}
+            <div class="card-footer bg-white">
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('oferta_general', carrera_id=carrera.id) }}">
+                        <i class="bi bi-calendar-week me-1"></i>Ver horarios
+                    </a>
+                    <button class="btn btn-outline-secondary btn-sm" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#editar-carrera-{{ carrera.id }}"
+                            aria-expanded="false" aria-controls="editar-carrera-{{ carrera.id }}">
+                        <i class="bi bi-pencil me-1"></i>Modificar
+                    </button>
+                </div>
+                <div class="collapse mt-3" id="editar-carrera-{{ carrera.id }}">
+                    <form method="post" action="{{ url_for('guardar_carrera_web') }}" class="row g-2">
+                        <input type="hidden" name="carrera_id" value="{{ carrera.id }}">
+                        <div class="col-md-5">
+                            <label class="form-label small" for="nombre-{{ carrera.id }}">Nombre</label>
+                            <input id="nombre-{{ carrera.id }}" name="nombre" class="form-control form-control-sm"
+                                   value="{{ carrera.nombre }}" required maxlength="120">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small" for="facultad-{{ carrera.id }}">Facultad o categoría</label>
+                            <input id="facultad-{{ carrera.id }}" name="facultad"
+                                   class="form-control form-control-sm" list="facultades-disponibles"
+                                   value="{{ carrera.facultad }}" required maxlength="120">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button class="btn btn-primary btn-sm w-100" type="submit">Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card card-panel text-center p-5">
+    <i class="bi bi-mortarboard text-muted fs-1"></i>
+    <h5 class="fw-bold mt-3">No hay carreras registradas</h5>
+    <p class="text-muted">Usa el formulario anterior para agregar una carrera o PNF.</p>
+</div>
+{% endif %}
+
+<script>
+    document.querySelectorAll('.toggle-ver-mas[aria-controls]').forEach((button) => {
+        const target = document.getElementById(button.getAttribute('aria-controls'));
+        if (!target) return;
+        const verMas = button.querySelector('.ver-mas');
+        const verMenos = button.querySelector('.ver-menos');
+        target.addEventListener('shown.bs.collapse', () => {
+            verMas.classList.add('d-none');
+            verMenos.classList.remove('d-none');
+            button.setAttribute('aria-expanded', 'true');
+        });
+        target.addEventListener('hidden.bs.collapse', () => {
+            verMas.classList.remove('d-none');
+            verMenos.classList.add('d-none');
+            button.setAttribute('aria-expanded', 'false');
+        });
+    });
+</script>
+
+{% endblock %}

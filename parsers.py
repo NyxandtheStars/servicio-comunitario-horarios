@@ -1,3 +1,4 @@
+import os
 import re
 import unicodedata
 import openpyxl
@@ -9,6 +10,7 @@ from database import (
     get_or_create_profesor,
     get_or_create_materia,
     get_or_create_salon,
+    calcular_horas_academicas,
     BLOQUES_HORARIOS,
 )
 
@@ -61,10 +63,12 @@ def normalizar_hora(h_str, ampm=""):
     m = int(numeros[1][:2]) if len(numeros) >= 2 else 0
 
     ampm_clean = normalizar_texto(ampm)
-    if "pm" in ampm_clean and "am" not in ampm_clean:
+    if "am" in ampm_clean and h == 12:
+        h = 0
+    elif "pm" in ampm_clean and "am" not in ampm_clean:
         if 1 <= h <= 11:
             h += 12
-    elif 1 <= h <= 6:
+    elif not ampm_clean and 1 <= h <= 6:
         # En horarios universitarios, las horas 01:xx a 06:xx corresponden a la tarde (13:xx a 18:xx)
         h += 12
 
@@ -151,13 +155,6 @@ def parsear_disponibilidad(texto_disp, ampm=""):
                         for b_ini, b_fin in expandir_rango_a_bloques(h_ini, h_fin):
                             if (dia_canon, b_ini, b_fin) not in resultados:
                                 resultados.append((dia_canon, b_ini, b_fin))
-        elif dias_encontrados:
-            for d_raw in dias_encontrados:
-                dia_canon = MAPA_DIAS.get(normalizar_texto(d_raw), "Lunes")
-                for b_ini, b_fin in BLOQUES_HORARIOS[:3]:
-                    if (dia_canon, b_ini, b_fin) not in resultados:
-                        resultados.append((dia_canon, b_ini, b_fin))
-
     return resultados
 
 
@@ -203,7 +200,9 @@ def mapear_columnas(encabezados):
             mapa.setdefault("semestre", idx)
         elif any(k in c for k in ["codigo", "cod"]):
             mapa.setdefault("codigo_materia", idx)
-        elif any(k in c for k in ["bloque", "frecuencia"]):
+        elif any(k in c for k in ["unidad de credito", "u/c", "uc", "credito"]):
+            mapa.setdefault("unidad_credito", idx)
+        elif any(k in c for k in ["bloque", "frecuencia", "horas academicas", "horas semanales"]):
             mapa.setdefault("bloques", idx)
         elif c in ("cedula", "ci", "documento"):
             mapa.setdefault("cedula", idx)
@@ -318,7 +317,13 @@ def procesar_filas_datos(filas, nombre_hoja=""):
         semestre = obtener("semestre", "General")
         codigo_mat = obtener("codigo_materia", "")
         cedula = obtener("cedula", "")
-        bloques_str = obtener("bloques", "1")
+        uc_str = obtener("unidad_credito", "")
+        bloques_str = obtener("bloques", "")
+
+        try:
+            uc_val = int(re.findall(r"\d+", str(uc_str))[0]) if uc_str else 0
+        except Exception:
+            uc_val = 0
 
         # Construir disponibilidad/horario a partir de DÍA + HORARIO + AM/PM o columna Disponibilidad
         disp_raw = obtener("disponibilidad", "")
@@ -332,10 +337,21 @@ def procesar_filas_datos(filas, nombre_hoja=""):
         else:
             bloques_disp = parsear_disponibilidad(disp_raw, ampm=ampm_col)
 
+        dia_fijo = bloques_disp[0][0] if (dia_col and bloques_disp) else ""
+        h_ini_fija = bloques_disp[0][1] if (dia_col and bloques_disp) else ""
+        h_fin_fija = bloques_disp[0][2] if (dia_col and bloques_disp) else ""
+
         try:
-            bloques_sem = max(1, min(4, int(re.findall(r"\d+", str(bloques_str))[0])))
+            bloques_explicitos = int(re.findall(r"\d+", str(bloques_str))[0]) if bloques_str else 0
         except Exception:
-            bloques_sem = max(1, len(bloques_disp)) if (dia_col and len(bloques_disp) > 1) else 1
+            bloques_explicitos = 0
+
+        bloques_sem = calcular_horas_academicas(
+            h_ini_fija,
+            h_fin_fija,
+            unidad_credito=uc_val,
+            bloques_semanales=bloques_explicitos or len(bloques_disp),
+        )
 
         fac_id = get_or_create_facultad(cursor, facultad_nom)
         carreras_lista = [c.strip() for c in re.split(r"[/|]+", carrera_final) if c.strip()] or [carrera_final]
@@ -369,14 +385,22 @@ def procesar_filas_datos(filas, nombre_hoja=""):
         else:
             materias_lista = [m.strip() for m in re.split(r"[,;/]+", materia_raw) if m.strip()]
 
-        dia_fijo = bloques_disp[0][0] if (dia_col and bloques_disp) else ""
-        h_ini_fija = bloques_disp[0][1] if (dia_col and bloques_disp) else ""
-        h_fin_fija = bloques_disp[0][2] if (dia_col and bloques_disp) else ""
-
         for car_nom in carreras_lista:
             car_id = get_or_create_carrera(cursor, car_nom, fac_id)
             for mat_nom in materias_lista:
                 mat_id = get_or_create_materia(cursor, mat_nom, car_id, codigo=codigo_mat, semestre=semestre)
+                if uc_val > 0 or bloques_sem > 1:
+                    cursor.execute(
+                        """UPDATE materias
+                           SET unidad_credito = CASE WHEN ? > 0 THEN ? ELSE unidad_credito END,
+                               horas_academicas = CASE
+                                   WHEN COALESCE(horas_academicas, 0) > 1 THEN horas_academicas
+                                   WHEN ? > 1 THEN ?
+                                   ELSE 2
+                               END
+                           WHERE id = ?""",
+                        (uc_val, uc_val, bloques_sem, bloques_sem, mat_id),
+                    )
                 cursor.execute(
                     """
                     INSERT INTO carga_academica
@@ -398,6 +422,113 @@ def procesar_filas_datos(filas, nombre_hoja=""):
     return {"insertados": insertados, "errores": errores}
 
 
+def detectar_plan_estudios(filas):
+    texto = "\n".join(
+        str(cell).strip()
+        for fila in filas
+        for cell in fila
+        if cell is not None
+    ).upper()
+    tiene_plan = "PLAN DE ESTUDIOS" in texto
+    tiene_codigo_nombre = any(
+        normalizar_texto(str(fila[0] if len(fila) > 0 else "")) in ("codigo", "código")
+        and any(
+            "nombre del curso" in normalizar_texto(str(cell))
+            for cell in fila[1:]
+            if cell is not None
+        )
+        for fila in filas
+    )
+    tiene_ciclos = any(
+        "CICLO " in str(cell).upper()
+        for fila in filas
+        for cell in fila
+        if cell is not None
+    )
+    return tiene_plan and tiene_codigo_nombre and tiene_ciclos
+
+
+def importar_plan_estudios(filas, nombre_hoja=""):
+    conn = get_connection()
+    cursor = conn.cursor()
+    carrera_nombre = ""
+    facultad_nombre = ""
+    ciclo_actual = "General"
+    insertados = 0
+    errores = []
+
+    try:
+        for fila in filas:
+            valores = ["" if cell is None else str(cell).strip() for cell in fila]
+            linea = " ".join(valor for valor in valores if valor)
+            linea_normalizada = normalizar_texto(linea)
+
+            if not carrera_nombre:
+                if "mencion" in linea_normalizada or "educacion inicial" in linea_normalizada or "educacion integral" in linea_normalizada:
+                    carrera_nombre = re.sub(r"\s+", " ", linea).strip()
+                    if "mencion" in linea_normalizada:
+                        facultad_nombre = "Facultad de Educación" if "educacion" in linea_normalizada or "docencia" in linea_normalizada else "Facultad de Administración"
+                    else:
+                        facultad_nombre = "Facultad de Educación"
+
+            ciclo_match = re.match(r"CICLO\s+(INTRODUCTORIO|GENERAL|PROFESIONAL|ELECTIVO)", linea.upper())
+            if ciclo_match:
+                ciclo_actual = ciclo_match.group(1).title()
+                continue
+
+            if len(valores) < 2:
+                continue
+            codigo = valores[0].strip()
+            materia = valores[1].strip()
+            unidad_credito = valores[2].strip() if len(valores) > 2 else ""
+
+            if (
+                not codigo
+                or not materia
+                or normalizar_texto(codigo) == "codigo"
+                or "nombre del curso" in normalizar_texto(materia)
+                or materia.upper().startswith("TOTAL ")
+            ):
+                continue
+            if not re.match(r"[A-Za-z0-9À-ÿ_-]+", codigo):
+                continue
+
+            if not carrera_nombre:
+                carrera_nombre = nombre_hoja.replace("_2024", "").replace("_", " ").strip()
+            if not facultad_nombre:
+                facultad_nombre = "Facultad de Educación" if nombre_hoja.upper().startswith("E") else "Facultad de Administración"
+
+            facultad_id = get_or_create_facultad(cursor, facultad_nombre)
+            carrera_id = get_or_create_carrera(cursor, carrera_nombre, facultad_id)
+            materia_id = get_or_create_materia(
+                cursor,
+                materia,
+                carrera_id,
+                codigo=codigo,
+                semestre=ciclo_actual,
+            )
+            unidades = int(unidad_credito) if unidad_credito.isdigit() else 0
+            ht = int(valores[3].strip()) if len(valores) > 3 and valores[3].strip().isdigit() else 0
+            hp = int(valores[4].strip()) if len(valores) > 4 and valores[4].strip().isdigit() else 0
+            horas_tot = (ht + hp) if (ht + hp) > 0 else max(2, unidades)
+            cursor.execute(
+                """UPDATE materias
+                   SET codigo = ?, semestre = ?, unidad_credito = ?, horas_academicas = ?
+                   WHERE id = ?""",
+                (codigo, ciclo_actual, unidades, horas_tot, materia_id),
+            )
+            insertados += 1
+
+        conn.commit()
+    except Exception as error:
+        conn.rollback()
+        errores.append(f"{nombre_hoja}: {error}")
+    finally:
+        conn.close()
+
+    return {"insertados": insertados, "errores": errores}
+
+
 def importar_excel(filepath):
     """
     Procesa cada hoja del libro Excel de forma independiente para que las diferencias
@@ -414,7 +545,10 @@ def importar_excel(filepath):
             if any(cell is not None and str(cell).strip() != "" for cell in row):
                 filas.append(list(row))
         if filas:
-            res = procesar_filas_datos(filas, nombre_hoja=sheet)
+            if detectar_plan_estudios(filas):
+                res = importar_plan_estudios(filas, nombre_hoja=sheet)
+            else:
+                res = procesar_filas_datos(filas, nombre_hoja=sheet)
             total_insertados += res["insertados"]
             todos_errores.extend(res["errores"])
 
@@ -501,3 +635,6 @@ def parsear_lineas_texto(lineas):
         todos_errores.extend(res["errores"])
 
     return {"insertados": total_insertados, "errores": todos_errores}
+
+
+# ═══════════════════════════════════════════════════════════════════════════

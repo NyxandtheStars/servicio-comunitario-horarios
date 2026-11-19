@@ -3,10 +3,53 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <div>
-        <h4 class="fw-bold mb-1 text-primary"><i class="bi bi-building me-2"></i>Ocupación de Salones (Múltiples Materias y Carreras)</h4>
+        <div class="text-primary small fw-bold text-uppercase mb-1">Infraestructura académica</div>
+        <h2 class="fw-bold mb-1">Gestión de Ambientes</h2>
         <p class="text-muted small mb-0">
-            En un mismo salón se dictan diferentes materias de distintas carreras y facultades en horarios sin solapamiento.
+            Inventario, capacidad y horario de ocupación de aulas y espacios académicos.
         </p>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="card card-stat bg-white p-3"><div class="text-muted small fw-semibold">Total ambientes</div><div class="fs-3 fw-bold text-primary">{{ estadisticas_ambientes.total }}</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card card-stat bg-white p-3"><div class="text-muted small fw-semibold">En uso</div><div class="fs-3 fw-bold text-warning">{{ estadisticas_ambientes.en_uso }}</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card card-stat bg-white p-3"><div class="text-muted small fw-semibold">Disponibles</div><div class="fs-3 fw-bold text-success">{{ estadisticas_ambientes.disponibles }}</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card card-stat bg-white p-3"><div class="text-muted small fw-semibold">Capacidad total</div><div class="fs-3 fw-bold text-info">{{ estadisticas_ambientes.capacidad }}</div><div class="small text-muted">personas</div></div></div>
+</div>
+
+<div class="card card-panel mb-4 overflow-hidden">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2 p-3">
+        <div><h5 class="fw-bold mb-0">Inventario de ambientes</h5><p class="small text-muted mb-0">Agrupados por ubicación registrada.</p></div>
+        <button class="btn btn-primary btn-sm fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#formNuevoAmbiente" aria-expanded="false">
+            <i class="bi bi-plus-lg me-1"></i>Nuevo ambiente
+        </button>
+    </div>
+    <div class="collapse border-bottom" id="formNuevoAmbiente">
+        <form action="{{ url_for('agregar_salon') }}" method="POST" class="row g-2 align-items-end p-3">
+            <div class="col-md-4"><label class="form-label small fw-semibold">Código del ambiente</label><input type="text" name="codigo" class="form-control form-control-sm" placeholder="Ej.: P1-09" required></div>
+            <div class="col-md-4"><label class="form-label small fw-semibold">Ubicación / piso</label><input type="text" name="edificio" class="form-control form-control-sm" value="Edificio Principal"></div>
+            <div class="col-md-2"><label class="form-label small fw-semibold">Capacidad</label><input type="number" name="capacidad" class="form-control form-control-sm" min="1" value="45"></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-primary btn-sm w-100">Registrar</button></div>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase"><tr><th>Ambiente</th><th>Ubicación</th><th>Capacidad</th><th>Clases asignadas</th><th>Estado</th></tr></thead>
+            <tbody>
+                {% for salon in salones %}
+                <tr>
+                    <td><a class="fw-bold text-decoration-none" href="{{ url_for('ocupacion_salones', salon_id=salon.id) }}">{{ salon.codigo }}</a></td>
+                    <td>{{ salon.edificio or 'Sin ubicación' }}</td>
+                    <td>{{ salon.capacidad or '—' }}{% if salon.capacidad %} estudiantes{% endif %}</td>
+                    <td>{{ salon.clases }}</td>
+                    <td>{% if salon.clases %}<span class="badge text-bg-warning">En uso</span>{% else %}<span class="badge text-bg-success">Disponible</span>{% endif %}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-muted p-4">No hay ambientes registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 

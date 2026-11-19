@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="mb-4">
+    <div class="text-primary small fw-bold text-uppercase mb-1">Registro académico</div>
+    <h2 class="fw-bold mb-1">Nueva Carga</h2>
+    <p class="text-muted mb-0">Incorpora docentes y materias al período. Elige registro individual o importación de una planificación.</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-12">
+        <section class="card card-panel p-4 h-100">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                <div>
+                    <h5 class="fw-bold mb-1"><i class="bi bi-file-earmark-arrow-up text-primary me-2"></i>Importar planificación</h5>
+                    <p class="small text-muted mb-0">Carga varios docentes desde un archivo compatible.</p>
+                </div>
+                <form action="{{ url_for('cargar_demo') }}" method="POST" onsubmit="return prompt('Esta acción BORRARÁ toda la carga académica y los horarios actuales. Escriba ELIMINAR para confirmar:') === 'ELIMINAR';">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-magic me-1"></i> Cargar datos de ejemplo
+                    </button>
+                </form>
+            </div>
+            <p class="small text-muted">
+                Formatos admitidos: <strong>Excel (.xlsx)</strong>, <strong>Word (.docx)</strong>, <strong>Texto (.txt)</strong> y <strong>CSV (.csv)</strong>.
+                La generación de horarios considera disponibilidad, aulas y posibles conflictos.
+            </p>
+            <form action="{{ url_for('cargar_archivo') }}" method="POST" enctype="multipart/form-data" class="border rounded-3 bg-light p-3">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="archivo-planificacion">Archivo de planificación</label>
+                    <input type="file" id="archivo-planificacion" name="archivo" class="form-control" accept=".xlsx,.docx,.txt,.csv" required>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="limpiar_previo" value="si" id="chkLimpiar">
+                    <label class="form-check-label small" for="chkLimpiar">Reemplazar los registros académicos anteriores antes de importar</label>
+                    <div class="form-text">Los ambientes registrados se conservan.</div>
+                </div>
+                <button type="submit" class="btn btn-primary fw-semibold">
+                    <i class="bi bi-gear-wide-connected me-1"></i> Procesar archivo y generar horarios
+                </button>
+            </form>
+            <div class="border-top mt-4 pt-3">
+                <div class="small fw-semibold text-muted mb-2">Plantillas de referencia</div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('descargar_plantilla', formato='xlsx') }}" class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
+                    <a href="{{ url_for('descargar_plantilla', formato='docx') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-earmark-word me-1"></i>Word</a>
+                    <a href="{{ url_for('descargar_plantilla', formato='txt') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-text me-1"></i>Texto</a>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-12">
+        <section class="card card-panel p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                <div>
+                    <h5 class="fw-bold mb-1"><i class="bi bi-person-plus text-primary me-2"></i>Ficha individual del docente</h5>
+                    <p class="small text-muted mb-0">Registra sus datos, una o más materias y la disponibilidad semanal por bloque.</p>
+                </div>
+            </div>
+            <form action="{{ url_for('agregar_manual') }}" method="POST" class="row g-3">
+                <input type="hidden" name="tipo_carga" value="ficha_docente">
+                <div class="col-12">
+                    <label class="form-label small fw-semibold" for="busquedaProfesorGeneral">Buscar profesor existente</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input id="busquedaProfesorGeneral" type="search" class="form-control"
+                               list="profesoresRegistrados"
+                               placeholder="Escriba nombre, carrera o materia">
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <label class="form-label small fw-semibold" for="docente">Nombre y apellidos</label>
+                    <input id="docente" type="text" name="docente" class="form-control"
+                           list="profesoresRegistrados" autocomplete="off" required>
+                    <datalist id="profesoresRegistrados">
+                        {% for profesor in profesores_global %}<option value="{{ profesor.nombre }}"></option>{% endfor %}
+                    </datalist>
+                </div>
+                <div class="col-lg-8">
+                    <label class="form-label small fw-semibold" for="profesorCapacitado">Profesor existente según carrera y materia</label>
+                    <input id="buscarProfesor" type="search" class="form-control form-control-sm mb-2"
+                           placeholder="Buscar profesor, carrera o materia">
+                    <select id="profesorCapacitado" class="form-select">
+                        <option value="">Seleccione primero carrera y materia</option>
+                    </select>
+                    <div class="form-text">El buscador incluye la carrera junto al nombre de cada profesor.</div>
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label small fw-semibold">Cédula</label>
+                    <input type="text" name="cedula" class="form-control" placeholder="V-12345678" required>
+                </div>
+                <div class="col-lg-4">
+                    <label class="form-label small fw-semibold">Correo electrónico</label>
+                    <input type="email" name="correo" class="form-control" autocomplete="email">
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label small fw-semibold">Condición docente</label>
+                    <select name="condicion" class="form-select">
+                        <option>Contratado/a</option><option>Ordinario/a</option><option>Otro</option>
+                    </select>
+                </div>
+
+                <div class="col-12 mt-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom pb-2 mb-3">
+                        <div><h6 class="fw-bold mb-0">Materias / cargas académicas</h6><small class="text-muted">Agrega las asignaturas de este docente; los catálogos existentes sirven de sugerencia.</small></div>
+                        <button class="btn btn-outline-primary btn-sm" type="button" id="agregarMateria"><i class="bi bi-plus-lg me-1"></i>Agregar materia</button>
+                    </div>
+                    <datalist id="carrerasRegistradas">{% for carrera in carreras %}<option value="{{ carrera.nombre }}"></option>{% endfor %}</datalist>
+                    <datalist id="codigosRegistrados">{% for codigo in codigos %}<option value="{{ codigo }}"></option>{% endfor %}</datalist>
+                    <datalist id="ciclosRegistrados">{% for ciclo in ciclos %}<option value="{{ ciclo }}"></option>{% endfor %}</datalist>
+                    <div id="materiasContainer" class="d-grid gap-3"></div>
+                </div>
+
+                <div class="col-12 mt-4">
+                    <h6 class="fw-bold mb-1">Disponibilidad semanal</h6>
+                    <p class="small text-muted mb-2">Marca los bloques en los que el docente puede impartir clases.</p>
+                    <div class="table-responsive border rounded-3">
+                        <table class="table table-bordered table-sm text-center align-middle mb-0 availability-grid">
+                            <thead class="table-light">
+                                <tr><th class="text-start">Día</th>{% for inicio, fin in franjas_carga %}<th class="small text-nowrap">{{ inicio }}<br>{{ fin }}</th>{% endfor %}</tr>
+                            </thead>
+                            <tbody>
+                                {% for dia in dias_carga %}
+                                <tr><th class="text-start small">{{ dia }}</th>
+                                    {% for inicio, fin in franjas_carga %}
+                                    <td><input class="form-check-input m-0" type="checkbox" name="disponibilidad" value="{{ dia }}|{{ inicio }}|{{ fin }}" aria-label="{{ dia }} {{ inicio }} a {{ fin }}"></td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="col-12 d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-primary fw-semibold px-4">
+                        <i class="bi bi-check2-circle me-1"></i> Guardar ficha y generar horarios
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
+
+<template id="materiaTemplate">
+    <div class="card border bg-light subject-row">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="fw-semibold small subject-title">Materia</span>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-subject" aria-label="Eliminar materia"><i class="bi bi-trash"></i></button>
+            </div>
+            <div class="row g-2">
+                <div class="col-lg-4">
+                    <label class="form-label small">Carrera</label>
+                    <select name="carrera" class="form-select form-select-sm career-select" required>
+                        <option value="">Seleccione una carrera</option>
+                        {% for carrera in carreras %}<option value="{{ carrera.nombre }}" data-carrera-id="{{ carrera.id }}">{{ carrera.nombre }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-4">
+                    <label class="form-label small">Materia</label>
+                    <select name="materia" class="form-select form-select-sm subject-select" required disabled>
+                        <option value="">Seleccione primero una carrera</option>
+                    </select>
+                </div>
+                <div class="col-lg-4"><label class="form-label small">Ambiente preferido (opcional)</label><select name="ambiente" class="form-select form-select-sm"><option value="">Cualquiera disponible</option>{% for salon in salones %}<option value="{{ salon.codigo }}">{{ salon.codigo }}</option>{% endfor %}</select></div>
+                <div class="col-md-2"><label class="form-label small">Código</label><input name="codigo" class="form-control form-control-sm" list="codigosRegistrados"></div>
+                <div class="col-md-3"><label class="form-label small">Ciclo</label><input name="ciclo" class="form-control form-control-sm" list="ciclosRegistrados" value="1er Semestre"></div>
+                <div class="col-md-3"><label class="form-label small">Sección</label><input name="seccion" class="form-control form-control-sm" placeholder="10100" inputmode="numeric"></div>
+                <div class="col-md-2"><label class="form-label small">Unidades de crédito</label><input name="unidad_credito" class="form-control form-control-sm" inputmode="numeric"></div>
+                <div class="col-md-2"><label class="form-label small">Mención</label><input name="mencion" class="form-control form-control-sm"></div>
+                <div class="col-12"><label class="form-label small">Compartida con otras materias/secciones</label><input name="compartidos" class="form-control form-control-sm"></div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style>
+    .availability-grid { min-width: 1050px; }
+    .availability-grid th:first-child { min-width: 105px; }
+    .availability-grid .form-check-input { cursor: pointer; }
+</style>
+<script>
+    (() => {
+        const container = document.getElementById('materiasContainer');
+        const template = document.getElementById('materiaTemplate');
+        const addButton = document.getElementById('agregarMateria');
+        const docenteInput = document.getElementById('docente');
+        const busquedaProfesorGeneral = document.getElementById('busquedaProfesorGeneral');
+        const cedulaInput = document.querySelector('[name="cedula"]');
+        const correoInput = document.querySelector('[name="correo"]');
+        const condicionSelect = document.querySelector('[name="condicion"]');
+        const profesorCapacitado = document.getElementById('profesorCapacitado');
+
+        busquedaProfesorGeneral.addEventListener('input', () => {
+            const termino = busquedaProfesorGeneral.value.trim();
+            if (termino) {
+                docenteInput.value = termino;
+            }
+        });
+        busquedaProfesorGeneral.addEventListener('change', () => {
+            const termino = busquedaProfesorGeneral.value.trim();
+            if (termino) {
+                docenteInput.value = termino;
+            }
+        });
+        const buscarProfesor = document.getElementById('buscarProfesor');
+
+        const actualizarProfesoresCapacitados = async (careerSelect, subjectSelect) => {
+            const selectedCareer = careerSelect.options[careerSelect.selectedIndex];
+            const careerId = selectedCareer?.dataset.carreraId;
+            const materia = subjectSelect.value;
+            profesorCapacitado.dataset.carreraId = careerId || '';
+            profesorCapacitado.dataset.materia = materia || '';
+            profesorCapacitado.innerHTML = '<option value="">Buscando profesores...</option>';
+            if (!careerId || !materia) {
+                profesorCapacitado.innerHTML = '<option value="">Seleccione primero carrera y materia</option>';
+                return;
+            }
+            const params = new URLSearchParams({ carrera_id: careerId, materia });
+            try {
+                const response = await fetch(`/api/profesores-capacitados?${params}`);
+                const profesores = await response.json();
+                profesorCapacitado.innerHTML = '';
+                if (profesores.length === 0) {
+                    profesorCapacitado.innerHTML = '<option value="">No hay profesores registrados para esta materia</option>';
+                    return;
+                }
+                profesorCapacitado.add(new Option('Seleccione un profesor existente', ''));
+                profesores.forEach((profesor) => {
+                    const etiqueta = `${profesor.nombre} — ${profesor.carrera}`;
+                    const option = new Option(etiqueta, profesor.nombre);
+                    option.dataset.cedula = profesor.cedula || '';
+                    option.dataset.email = profesor.email || '';
+                    option.dataset.condicion = profesor.condicion || 'Contratado/a';
+                    profesorCapacitado.add(option);
+                });
+            } catch (error) {
+                profesorCapacitado.innerHTML = '<option value="">No se pudo consultar el listado de profesores</option>';
+            }
+        };
+
+        profesorCapacitado.addEventListener('change', () => {
+            const selected = profesorCapacitado.options[profesorCapacitado.selectedIndex];
+            if (!selected || !selected.value) return;
+            docenteInput.value = selected.value;
+            cedulaInput.value = selected.dataset.cedula || '';
+            correoInput.value = selected.dataset.email || '';
+            if (selected.dataset.condicion) {
+                condicionSelect.value = selected.dataset.condicion;
+            }
+        });
+
+        buscarProfesor.addEventListener('input', () => {
+            const termino = buscarProfesor.value.trim().toLocaleLowerCase();
+            Array.from(profesorCapacitado.options).forEach((option, index) => {
+                if (index === 0) return;
+                option.hidden = termino && !option.textContent.toLocaleLowerCase().includes(termino);
+            });
+        });
+        const updateTitles = () => {
+            container.querySelectorAll('.subject-row').forEach((row, index) => {
+                row.querySelector('.subject-title').textContent = `Materia ${index + 1}`;
+            });
+        };
+        const addSubject = () => {
+            const row = template.content.firstElementChild.cloneNode(true);
+            const careerSelect = row.querySelector('.career-select');
+            const subjectSelect = row.querySelector('.subject-select');
+            careerSelect.addEventListener('change', async () => {
+                const selected = careerSelect.options[careerSelect.selectedIndex];
+                const careerId = selected?.dataset.carreraId;
+                subjectSelect.innerHTML = '<option value="">Cargando materias...</option>';
+                subjectSelect.disabled = true;
+                if (!careerId) {
+                    subjectSelect.innerHTML = '<option value="">Seleccione primero una carrera</option>';
+                    return;
+                }
+                try {
+                    const response = await fetch(`/api/materias-carrera/${careerId}`);
+                    const materias = await response.json();
+                    subjectSelect.innerHTML = '<option value="">Seleccione una materia</option>';
+                    subjectSelect._materiasPorNombre = {};
+                    materias.forEach((materia) => {
+                        const option = document.createElement('option');
+                        option.value = materia.nombre;
+                        option.textContent = materia.codigo
+                            ? `${materia.nombre} — ${materia.codigo} — ${materia.semestre || 'Sin ciclo'}`
+                            : `${materia.nombre} — ${materia.semestre || 'Sin ciclo'}`;
+                        subjectSelect.appendChild(option);
+                        subjectSelect._materiasPorNombre[materia.nombre] = materia;
+                    });
+                    subjectSelect.addEventListener('change', () => {
+                        const materia = subjectSelect._materiasPorNombre[subjectSelect.value];
+                        if (!materia) return;
+                        const codigoInput = row.querySelector('[name="codigo"]');
+                        const cicloInput = row.querySelector('[name="ciclo"]');
+                        const ucInput = row.querySelector('[name="unidad_credito"]');
+                        codigoInput.value = materia.codigo || '';
+                        cicloInput.value = materia.semestre || '1er Semestre';
+                        ucInput.value = materia.unidad_credito || '';
+                        actualizarProfesoresCapacitados(careerSelect, subjectSelect);
+                    });
+                    subjectSelect.disabled = materias.length === 0;
+                    if (materias.length === 0) {
+                        subjectSelect.innerHTML = '<option value="">Esta carrera no tiene materias cargadas</option>';
+                    }
+                } catch (error) {
+                    subjectSelect.innerHTML = '<option value="">No se pudieron cargar las materias</option>';
+                }
+            });
+            row.querySelector('.remove-subject').addEventListener('click', () => {
+                if (container.querySelectorAll('.subject-row').length > 1) {
+                    row.remove();
+                    updateTitles();
+                }
+            });
+            container.appendChild(row);
+            updateTitles();
+        };
+        addButton.addEventListener('click', addSubject);
+        addSubject();
+    })();
+</script>
+
+{% endblock %}
